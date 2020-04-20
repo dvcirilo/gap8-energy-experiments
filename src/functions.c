@@ -1,13 +1,5 @@
 #include "functions.h"
 
-/* Initialize seeds */
-void initialize_seeds(unsigned int *L1_mem, int core_num, unsigned int seed)
-{
-    for (int i = 0; i < core_num; i++) {
-       L1_mem[i] = seed; 
-    }
-}
-
 /* Returns the current voltage */
 uint32_t current_voltage(void)
 {
