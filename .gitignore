@@ -1,0 +1,6 @@
+BUILD
+.vagrant*
+*.swp
+tags
+examples
+!examples/.keep
