@@ -1,6 +1,6 @@
 # User Test
 #------------------------------------------
-TEST_C          = src/test-isis.c src/functions.c src/pin.c
+TEST_C          = src/test.c src/functions.c src/pin.c
 
 # For RTOS Jenkins test, it will never finished so add a jenkins test Flag to exit().
 MBED_FLAGS     +=-DJENKINS_TEST_FLAG=1

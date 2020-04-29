@@ -20,8 +20,8 @@
 #define F_MIN         (250000000)
 #define F_STEP        (5000000)
 #define F_DIV         (1000)
-#define RUNS          (10000)
-#define NUM_TESTS     (10)
+#define RUNS          (500000)
+#define NUM_TESTS     (15)
 
 #define TIMER TIMER1
 

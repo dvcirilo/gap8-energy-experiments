@@ -2,6 +2,8 @@
 #include "functions.h"
 #include "pin.h"
 
+unsigned int rand_values[NUM_TESTS];
+
 /* The CLUSTER function: Generate a random number */
 void random_gen(void *arg)
 {
@@ -35,28 +37,25 @@ struct run_info test_rand(bool verbose)
         CLUSTER_Wait(0);
         calls++;
         for (int i = 0; i < CORE_NUMBER; i++) {
-            printf("%d ", L1_mem[i]);
+           printf("%d ", L1_mem[i]);
         }
         printf("\n");
-        /*
-        if (L1_mem[CORE_NUMBER-1]^rand_values[i]){
-            failure_counter++;
-            if (verbose)
-                printf("%d,0x%08x,0x%08x,%d,%d\n", calls,
-                        L1_mem[CORE_NUMBER-1], rand_values[i],
-                        failure_counter,success_counter);
-            call_total += calls;
-            calls = 0;
-            break;
-        } else {
-            success_counter++;
-        }
-        */
+     	   printf("%d",rand_values[j]);
+		printf("\n");
+		 
+        	if (L1_mem[0]^rand_values[j]){
+            		failure_counter++;
+        	} else {
+            		success_counter++;
+        	}
+
+	
+        
 
         /* Breaks if failed */
         if (failure_counter)
             break;
-    }
+    }    
     call_total += calls;
     runs.success_counter = success_counter;
     runs.failure_counter = failure_counter;
@@ -80,6 +79,17 @@ int main()
 
     printf("FC Frequency: %d kHz - Voltage: %lu mV\n",
             FLL_GetFrequency(uFLL_SOC)/F_DIV, current_voltage());
+
+    unsigned int rands = (unsigned int) SEED;
+    for (int i=0; i < NUM_TESTS; i++){
+	for (int j=0; j < RUNS; j++){
+	    rand_values[i] = rand_r(&rands); 
+	}
+	rands = (unsigned int) SEED;
+
+   	/*Print rand_values*/
+	//printf("%d\n", rand_values[i]);
+   }
 
     /* Cluster Start - Power on */
     CLUSTER_Start(0, CORE_NUMBER, 0);
