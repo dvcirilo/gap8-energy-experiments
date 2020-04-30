@@ -8,7 +8,9 @@ unsigned int rand_values[NUM_TESTS];
 void random_gen(void *arg)
 {
     unsigned int *L1_mem = (unsigned int *) arg;
-    L1_mem[__core_ID()] = SEED;
+
+    /* Reset SEED for each run */
+    //L1_mem[__core_ID()] = SEED;
     for (int i = 0; i < RUNS; i++) {
         rand_r(&L1_mem[__core_ID()]);
     }
@@ -30,32 +32,27 @@ struct run_info test_rand(bool verbose)
 
     /* Allocating a rand variable for each core, preventing race conditions */
     unsigned int *L1_mem = L1_Malloc(CORE_NUMBER*sizeof(unsigned int));
+    for(int i=0; i<CORE_NUMBER;i++){
+    	L1_mem[i] = SEED;
+	}
 
     /* Runs NUM_TESTS tests. Each test with RUNS calls to random_gen() */
     for(int j=0;j<NUM_TESTS;j++) {
         CLUSTER_SendTask(0, Master_Entry, (void *) L1_mem, 0);
         CLUSTER_Wait(0);
         calls++;
+
         for (int i = 0; i < CORE_NUMBER; i++) {
-           printf("%d ", L1_mem[i]);
+			if (L1_mem[i]^rand_values[j]){
+				failure_counter++;
+			} else {
+				success_counter++;
+			}
+           if (verbose)
+               printf("%d ", L1_mem[i]);
         }
-        printf("\n");
-     	   printf("%d",rand_values[j]);
-		printf("\n");
-		 
-        	if (L1_mem[0]^rand_values[j]){
-            		failure_counter++;
-        	} else {
-            		success_counter++;
-        	}
-
-	
-        
-
-        /* Breaks if failed */
-        if (failure_counter)
-            break;
     }    
+
     call_total += calls;
     runs.success_counter = success_counter;
     runs.failure_counter = failure_counter;
@@ -82,14 +79,19 @@ int main()
 
     unsigned int rands = (unsigned int) SEED;
     for (int i=0; i < NUM_TESTS; i++){
-	for (int j=0; j < RUNS; j++){
-	    rand_values[i] = rand_r(&rands); 
-	}
-	rands = (unsigned int) SEED;
 
-   	/*Print rand_values*/
-	//printf("%d\n", rand_values[i]);
+		for (int j=0; j < RUNS; j++){
+			rand_r(&rands);
+		}
+
+		//rands = (unsigned int) SEED;
+		rand_values[i] = rands;
+
+		/*Print rand_values*/
+		printf("%d ", rand_values[i]);
+
    }
+		printf("\n");
 
     /* Cluster Start - Power on */
     CLUSTER_Start(0, CORE_NUMBER, 0);
@@ -99,7 +101,7 @@ int main()
     int fmax, fstep, freq, time;
     int vmax, vstep, voltage;
 
-    freq = 80000000;
+    freq = 100000000;
     fmax = 100000000;
     fstep =  1000000;
 
@@ -110,7 +112,7 @@ int main()
     //while (voltage < vmax) {
         freq += fstep;
         //voltage += vstep;
-        if(set_voltage_current(freq, voltage, false)){
+        if(set_voltage_current(freq, voltage, true)){
             printf("Failed to assign voltage\n");
             /*break;*/
         }
