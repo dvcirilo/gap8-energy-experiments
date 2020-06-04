@@ -11,7 +11,7 @@ int set_voltage_current(int frequency, int voltage, bool verbose)
 {
     int set_voltage_return;
 
-    set_voltage_return = PMU_SetVoltage(voltage,1);
+    set_voltage_return = PMU_SetVoltage(voltage,0);
 
     if (set_voltage_return) {
         if (verbose)
@@ -25,7 +25,7 @@ int set_voltage_current(int frequency, int voltage, bool verbose)
                 FLL_ClusterMaxFreqAtV(current_voltage())/F_DIV);
 
     /* Set frequency */
-    if (FLL_SetFrequency(uFLL_CLUSTER, frequency, 1) == -1) {
+    if (FLL_SetFrequency(uFLL_CLUSTER, frequency, 0) == -1) {
         if(verbose)
             printf("Error of changing frequency, check Voltage value!\n");
         return -1;

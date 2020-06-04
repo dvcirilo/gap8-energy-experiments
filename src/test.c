@@ -10,7 +10,10 @@ void random_gen(void *arg)
     unsigned int *L1_mem = (unsigned int *) arg;
 
     /* Reset SEED for each run */
-    //L1_mem[__core_ID()] = SEED;
+    if(__core_ID()==3){
+        /*L1_mem[__core_ID()] = SEED;*/
+    }
+
     for (int i = 0; i < RUNS; i++) {
         rand_r(&L1_mem[__core_ID()]);
     }
@@ -25,15 +28,18 @@ void Master_Entry(int * L1_mem)
 /* The actual test. */
 struct run_info test_rand(bool verbose)
 {
-    int error=0;
-    int success_counter=0, failure_counter=0;
     int total_time=0, calls=0, call_total=0;
     struct run_info runs;
+
 
     /* Allocating a rand variable for each core, preventing race conditions */
     unsigned int *L1_mem = L1_Malloc(CORE_NUMBER*sizeof(unsigned int));
     for(int i=0; i<CORE_NUMBER;i++){
     	L1_mem[i] = SEED;
+        runs.success_counter[i] = 0;
+        runs.failure_counter[i] = 0;
+        runs.successes = 0;
+        runs.failures = 0;
 	}
 
     /* Runs NUM_TESTS tests. Each test with RUNS calls to random_gen() */
@@ -44,20 +50,17 @@ struct run_info test_rand(bool verbose)
 
         for (int i = 0; i < CORE_NUMBER; i++) {
 			if (L1_mem[i]^rand_values[j]){
-				failure_counter++;
+                runs.failure_counter[i]++;
+                runs.failures++;
 			} else {
-				success_counter++;
+				runs.success_counter[i]++;
+                runs.successes++;
 			}
            if (verbose)
                printf("%d ", L1_mem[i]);
         }
     }    
 
-    call_total += calls;
-    runs.success_counter = success_counter;
-    runs.failure_counter = failure_counter;
-    runs.call_total = call_total;
-    runs.total_time = 0;
     L1_Free(L1_mem);
     return runs;
 }
@@ -96,28 +99,27 @@ int main()
     /* Cluster Start - Power on */
     CLUSTER_Start(0, CORE_NUMBER, 0);
 
-    printf("set_freq,meas_freq,success,fail,total,voltage\n");
+    int fmax, fstep, freq, finit, time;
+    int vmin, vmax, vstep, voltage;
 
-    int fmax, fstep, freq, time;
-    int vmax, vstep, voltage;
+    finit = 200000000;
+    fmax =  220000000; //300000000;
+    fstep =  10000000;
 
-    freq = 100000000;
-    fmax = 100000000;
-    fstep =  1000000;
-
-    voltage = 1200;
+    voltage = 1000;
+    vmin = 1000;
     vmax = 1200;
     vstep = 50;
-    /*while (freq < fmax) {*/
-    //while (voltage < vmax) {
-        freq += fstep;
-        //voltage += vstep;
-        if(set_voltage_current(freq, voltage, true)){
-            printf("Failed to assign voltage\n");
-            /*break;*/
-        }
 
-        for (int i = 0; i < 1; i++) {
+    while (voltage <= vmax) {       
+        freq = finit;
+        while (freq <= fmax) {
+            printf("##  V:%d F:%d  ##\n",voltage,freq);
+            if(set_voltage_current(freq, voltage, false)){
+                printf("Failed to assign freq/voltage\n");
+                break;
+            }
+
             /* Set trigger */
             set_pin(trigger,1);
 
@@ -126,10 +128,17 @@ int main()
 
             /* Unset trigger */
             set_pin(trigger,0);
+ 
+            printf("set_freq,meas_freq,voltage,successes,failures\n");
+            printf("%d,%d,%d,%d,%d\n",
+                freq,FLL_GetFrequency(uFLL_CLUSTER),current_voltage(), runs.successes, runs.failures);
+            printf("id, successes, failures\n");
+            for(int i=0; i<CORE_NUMBER;i++){
+                printf("%d,%d,%d",i,runs.success_counter[i],runs.failure_counter[i]);
+                printf("\n");
+            }
 
-            printf("%d,%d,%d,%d,%d,%d\n",
-                    freq,FLL_GetFrequency(uFLL_CLUSTER),runs.success_counter, 
-                    runs.failure_counter, runs.call_total, current_voltage());
+            freq += fstep;
 
             /* Delay to allow measurement */
             time = 100;
@@ -137,7 +146,9 @@ int main()
                 osDelay(time--);
             }
         }
-    /*}*/
+        printf("Voltage loop\n");
+        voltage += vstep;
+    }
 
     /* Cluster Stop - Power down */
     CLUSTER_Stop(0);

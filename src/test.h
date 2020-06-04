@@ -26,8 +26,10 @@
 #define TIMER TIMER1
 
 struct run_info {
-    int success_counter;
-    int failure_counter;
+    int success_counter[CORE_NUMBER];
+    int failure_counter[CORE_NUMBER];
+    int failures;
+    int successes;    
     int call_total;
     int total_time;
 };
