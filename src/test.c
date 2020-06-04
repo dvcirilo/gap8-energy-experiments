@@ -10,9 +10,9 @@ void random_gen(void *arg)
     unsigned int *L1_mem = (unsigned int *) arg;
 
     /* Reset SEED for each run */
-    if(__core_ID()==3){
+    /*if(__core_ID()==3){*/
         /*L1_mem[__core_ID()] = SEED;*/
-    }
+    /*}*/
 
     for (int i = 0; i < RUNS; i++) {
         rand_r(&L1_mem[__core_ID()]);
@@ -91,7 +91,7 @@ int main()
 		rand_values[i] = rands;
 
 		/*Print rand_values*/
-		printf("%d ", rand_values[i]);
+		/*printf("%d ", rand_values[i]);*/
 
    }
 		printf("\n");
@@ -102,19 +102,38 @@ int main()
     int fmax, fstep, freq, finit, time;
     int vmin, vmax, vstep, voltage;
 
-    finit = 200000000;
-    fmax =  220000000; //300000000;
-    fstep =  10000000;
+    finit = 210000000;
+    fstep =  5000000;
 
     voltage = 1000;
-    vmin = 1000;
     vmax = 1200;
     vstep = 50;
 
+    printf("set_freq,meas_freq,voltage,success[i],failures[i]\n");
     while (voltage <= vmax) {       
         freq = finit;
+        switch(voltage)
+        {
+            case 1000:
+                fmax = 220000000;
+                break;
+            case 1050:
+                fmax = 245000000;
+                break;
+            case 1100:
+                fmax = 280000000;
+                break;
+            case 1150:
+                fmax = 305000000;
+                break;
+            case 1200:
+                fmax = 330000000;
+                break;
+            default:
+                fmax = 87000000;
+        }
         while (freq <= fmax) {
-            printf("##  V:%d F:%d  ##\n",voltage,freq);
+
             if(set_voltage_current(freq, voltage, false)){
                 printf("Failed to assign freq/voltage\n");
                 break;
@@ -129,14 +148,13 @@ int main()
             /* Unset trigger */
             set_pin(trigger,0);
  
-            printf("set_freq,meas_freq,voltage,successes,failures\n");
-            printf("%d,%d,%d,%d,%d\n",
-                freq,FLL_GetFrequency(uFLL_CLUSTER),current_voltage(), runs.successes, runs.failures);
-            printf("id, successes, failures\n");
+            printf("%d,%d,%d",
+                current_voltage(),freq,FLL_GetFrequency(uFLL_CLUSTER));
             for(int i=0; i<CORE_NUMBER;i++){
-                printf("%d,%d,%d",i,runs.success_counter[i],runs.failure_counter[i]);
-                printf("\n");
+                printf(",%d,%d",runs.success_counter[i],runs.failure_counter[i]);
             }
+
+            printf("\n");
 
             freq += fstep;
 
@@ -146,7 +164,6 @@ int main()
                 osDelay(time--);
             }
         }
-        printf("Voltage loop\n");
         voltage += vstep;
     }
 
