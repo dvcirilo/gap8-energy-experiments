@@ -5,5 +5,6 @@
 
 uint32_t current_voltage(void);
 int set_voltage_current(int frequency, int voltage, bool verbose);
+void delay();
 
 #endif /* FUNCTIONS_H */

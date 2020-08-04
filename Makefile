@@ -3,7 +3,7 @@
 TEST_C          = src/test.c src/functions.c src/pin.c
 
 # For RTOS Jenkins test, it will never finished so add a jenkins test Flag to exit().
-MBED_FLAGS     +=-DJENKINS_TEST_FLAG=1
+MBED_FLAGS     +=-DJENKINS_TEST_FLAG=1 -O0
 
 PLPBRIDGE_FLAGS +=-v 1
 
