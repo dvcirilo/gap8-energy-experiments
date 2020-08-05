@@ -1,10 +1,6 @@
-# User Test
-#------------------------------------------
-TEST_C          = src/test.c src/functions.c src/pin.c
+PULP_APP = test
+PULP_APP_FC_SRCS = src/test.c src/util.c
+PULP_APP_HOST_SRCS = src/test.c src/util.c
+PULP_CFLAGS = -O2 -g -I$(GAP_SDK_HOME)/rtos/pulp/pulp-os/kernel/gap/
 
-# For RTOS Jenkins test, it will never finished so add a jenkins test Flag to exit().
-MBED_FLAGS     +=-DJENKINS_TEST_FLAG=1 -O0
-
-PLPBRIDGE_FLAGS +=-v 1
-
-include $(GAP_SDK_HOME)/tools/rules/mbed_rules.mk
+include $(GAP_SDK_HOME)/tools/rules/pulp_rules.mk

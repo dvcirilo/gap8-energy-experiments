@@ -1,29 +1,28 @@
 #ifndef TEST_H
 #define TEST_H
 
-/* Needed for printf */
-#include "gap_common.h"
-#include "rtx_lib.h"
+#include "rt/rt_api.h"
 
-/* Needed for GAP8 Cluster usage */
-#include "gap_cluster.h"
-#include "gap_dmamchan.h"
-#include <stdlib.h>
-
-#define FC_FREQ       (150000000)
-#define CORE_NUMBER   (8)
-#define SEED          (100)
-#define V_MAX         (1200)
-#define V_MIN         (1000)
-#define V_STEP        (50)
-#define F_MAX         (350000000)
-#define F_MIN         (250000000)
-#define F_STEP        (5000000)
-#define F_DIV         (1000)
-#define RUNS          (100000)
-#define NUM_TESTS     (1000)
-
-#define TIMER TIMER1
+#define WAIT_TIME    (12000000)
+#define TRIGGER      (17)
+#define STACK_SIZE   (2048)
+#define MOUNT        (1)
+#define UNMOUNT      (0)
+#define CID          (0)
+#define FC_FREQ      (150000000)
+#define CORE_NUMBER  (8)
+#define SEED         (10)
+#define V_MAX        (1200)
+#define V_MIN        (1000)
+#define V_STEP       (50)
+#define F_MAX        (350000000)
+#define F_MIN        (250000000)
+#define F_STEP       (5000000)
+#define F_DIV        (1000)
+#define PROBLEM_SIZE (100000)
+#define TEST_RUNS    (1000)
+#define TEST_REPEAT  (10)
+#define MHZ          (1000000)
 
 struct run_info {
     int success_counter[CORE_NUMBER];
@@ -33,5 +32,11 @@ struct run_info {
     int call_total;
     int total_time;
 };
+
+struct run_info test_rand(rt_event_sched_t *p_sched, void *stacks,
+                          rt_event_t *p_event, int verbose);
+void random_gen(void *arg);
+void cluster_entry(void *arg);
+void end_of_call(void *arg);
 
 #endif /* TEST_H */

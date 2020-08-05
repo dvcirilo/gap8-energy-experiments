@@ -1,104 +1,53 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include "rt/rt_api.h"
 #include "test.h"
-#include "functions.h"
-#include "pin.h"
+#include "util.h"
 
-unsigned int rand_values[NUM_TESTS];
-
-/* The CLUSTER function: Generate a random number */
-void random_gen(void *arg)
-{
-    unsigned int *L1_mem = (unsigned int *) arg;
-
-    /* Reset SEED for each run */
-    /*if(__core_ID()==3){*/
-        /*L1_mem[__core_ID()] = SEED;*/
-    /*}*/
-
-    for (int i = 0; i < RUNS; i++) {
-        rand_r(&L1_mem[__core_ID()]);
-    }
-}
-
-/* Master entry in charge of spawning the parallel function to all the cores */
-void Master_Entry(int * L1_mem)
-{
-    CLUSTER_CoresFork(random_gen, (void *) L1_mem);
-}
-
-/* The actual test. */
-struct run_info test_rand(bool verbose)
-{
-    int total_time=0, calls=0, call_total=0;
-    struct run_info runs;
-
-
-    /* Allocating a rand variable for each core, preventing race conditions */
-    unsigned int *L1_mem = L1_Malloc(CORE_NUMBER*sizeof(unsigned int));
-    for(int i=0; i<CORE_NUMBER;i++){
-    	L1_mem[i] = SEED;
-        runs.success_counter[i] = 0;
-        runs.failure_counter[i] = 0;
-        runs.successes = 0;
-        runs.failures = 0;
-	}
-
-    /* Runs NUM_TESTS tests. Each test with RUNS calls to random_gen() */
-    for(int j=0;j<NUM_TESTS;j++) {
-        CLUSTER_SendTask(0, Master_Entry, (void *) L1_mem, 0);
-        CLUSTER_Wait(0);
-        calls++;
-
-        for (int i = 0; i < CORE_NUMBER; i++) {
-			if (L1_mem[i]^rand_values[j]){
-                runs.failure_counter[i]++;
-                runs.failures++;
-			} else {
-				runs.success_counter[i]++;
-                runs.successes++;
-			}
-           if (verbose)
-               printf("%d ", L1_mem[i]);
-        }
-    }    
-
-    L1_Free(L1_mem);
-    return runs;
-}
+unsigned int rand_values[TEST_RUNS];
+int done = 0;
 
 int main()
 {
-    PinName trigger = GPIO_A17;
-
     struct run_info runs;
+    int i, j;
 
-    /* Initialize trigger for external energy measurement */
-    init_pin(trigger);
+    printf("\n---------------------- EXECUTION -----------------------\n");
 
-    /* Initialize FC Clock */
-    FLL_SetFrequency(uFLL_SOC, FC_FREQ, 1);
+    /*Set FC (SoC) Frequency (100MhZ)*/
+    rt_freq_set(__RT_FREQ_DOMAIN_FC,100*MHZ);
+    printf("Soc FC frequency: %d MHz\n", rt_freq_get(__RT_FREQ_DOMAIN_FC)/MHZ);
 
-    printf("FC Frequency: %d kHz - Voltage: %lu mV\n",
-            FLL_GetFrequency(uFLL_SOC)/F_DIV, current_voltage());
+    /* Generate comparison values */
+    printf("Generating %dM rand values with seed = %d\n",
+                                PROBLEM_SIZE*TEST_RUNS/(1000*1000), SEED);
+    generate_rands(rand_values, SEED, TEST_RUNS, PROBLEM_SIZE, 0);
 
-    unsigned int rands = (unsigned int) SEED;
-    for (int i=0; i < NUM_TESTS; i++){
+    printf("Done. Running proceeding with test...\n");
 
-		for (int j=0; j < RUNS; j++){
-			rand_r(&rands);
-		}
+    /* GPIO Setup */
+    rt_padframe_profile_t *profile_gpio = rt_pad_profile_get("hyper_gpio");
+    if (profile_gpio == NULL) {
+        printf("pad config error\n");
+        return 1;
+    }
+    rt_padframe_set(profile_gpio);
 
-		//rands = (unsigned int) SEED;
-		rand_values[i] = rands;
+    /* GPIO initialization */
+    rt_gpio_init(0, TRIGGER);
 
-		/*Print rand_values*/
-		/*printf("%d ", rand_values[i]);*/
+    /* Configure TRIGGER pin as an output */
+    rt_gpio_set_dir(0, 1<<TRIGGER, RT_GPIO_IS_OUT);
 
-   }
-		printf("\n");
+    rt_event_sched_t *p_sched = rt_event_internal_sched();
+    if (rt_event_alloc(p_sched, 4)) return -1;
 
-    /* Cluster Start - Power on */
-    CLUSTER_Start(0, CORE_NUMBER, 0);
-    delay();
+    rt_event_t *p_event = rt_event_get(p_sched, end_of_call, (void *) CID);
+
+    rt_cluster_mount(MOUNT, CID, 0, NULL);
+
+    void *stacks = rt_alloc(RT_ALLOC_CL_DATA, STACK_SIZE*rt_nb_pe());
+    if (stacks == NULL) return -1;
 
     int fmax, fstep, freq, finit;
     int vmin, vmax, vstep, voltage;
@@ -114,6 +63,7 @@ int main()
     vstep = 50;
 
     printf("voltage,set_freq,meas_freq,success[i],failures[i]\n");
+
     while (voltage <= vmax) {       
         freq = finit;
         switch(voltage)
@@ -139,45 +89,125 @@ int main()
 
         while (freq <= fmax) {
             
-            if(set_voltage_current(freq, voltage, false)){
+            if(set_voltage_current(freq, voltage)){
                 printf("Failed to assign freq/voltage\n");
                 break;
             }
 
-            /* Set trigger */
-            set_pin(trigger,1);
-            //printf("Trigger set\n");
+            for (int k = 0; k < TEST_REPEAT; k++) {
+                /* Delay to allow measurements */
+                rt_time_wait_cycles(200*MHZ);
 
-            /* Run call the test */
-            runs = test_rand(false);
+                /* Set trigger */
+                rt_gpio_set_pin_value(0, TRIGGER, 1);
 
-            /* Unset trigger */
-            set_pin(trigger,0);
-            //printf("Trigger unset\n");
- 
-            printf("%d,%d,%d",
-                current_voltage(),freq,FLL_GetFrequency(uFLL_CLUSTER));
-            for(int i=0; i<CORE_NUMBER;i++){
-                printf(",%d,%d",runs.success_counter[i],runs.failure_counter[i]);
+                /* Run call the test */
+                runs = test_rand(p_sched, stacks, p_event, 0);
+
+                /* Unset trigger */
+                rt_gpio_set_pin_value(0, TRIGGER, 0);
+     
+                printf("%d,%d", (int) current_voltage(),
+                                rt_freq_get(__RT_FREQ_DOMAIN_CL));
+                for(int i=0; i<CORE_NUMBER;i++){
+                    printf(",%d,%d", runs.success_counter[i],
+                                     runs.failure_counter[i]);
+                }
+
+                printf("\n");
+                
             }
-
-            printf("\n");
 
             if (freq <= f_mid){
                 freq += fstep;
             }else{
                 freq += fstep2;
             }
-            delay();
-
         }
+
         voltage += vstep;
     }
 
-    /* Cluster Stop - Power down */
-    CLUSTER_Stop(0);
+    rt_cluster_mount(UNMOUNT, CID, 0, NULL);
 
-    printf("Test finished\n");
+    printf("Test success: Leaving main controller\n");
+    return 0;
+}
 
-    exit(0);
+/* The actual test. */
+struct run_info test_rand(rt_event_sched_t *p_sched, void *stacks,
+                          rt_event_t *p_event, int verbose)
+{
+    int total_time=0, calls=0, call_total=0;
+    struct run_info runs;
+
+
+    /* Allocating a rand variable for each core, preventing race conditions */
+    unsigned int *L1_mem = rt_alloc(RT_ALLOC_CL_DATA,
+                                    CORE_NUMBER*sizeof(unsigned int));
+
+    for(int i=0; i<CORE_NUMBER;i++){
+    	L1_mem[i] = SEED;
+        runs.success_counter[i] = 0;
+        runs.failure_counter[i] = 0;
+        runs.successes = 0;
+        runs.failures = 0;
+	}
+
+    /* Runs NUM_TESTS tests. Each test with PROBLEM_SIZE calls to random_gen() */
+    for(int j=0;j<TEST_RUNS;j++) {
+
+        done = 0;
+        rt_cluster_call(NULL, CID, cluster_entry, L1_mem, stacks, STACK_SIZE,
+                        STACK_SIZE, rt_nb_pe(), p_event);
+
+        /* Wait for cluster */
+        while(!done)
+          rt_event_execute(p_sched, 1);
+
+        calls++;
+
+        for (int i = 0; i < CORE_NUMBER; i++) {
+			if (L1_mem[i]^rand_values[j]){
+                runs.failure_counter[i]++;
+                runs.failures++;
+			} else {
+				runs.success_counter[i]++;
+                runs.successes++;
+			}
+           if (verbose == 1)
+               printf("%d ", L1_mem[i]);
+        }
+    }    
+
+    rt_free(RT_ALLOC_CL_DATA, L1_mem, CORE_NUMBER*sizeof(unsigned int));
+    return runs;
+}
+
+/* The CLUSTER function: Generate a random number */
+void random_gen(void *arg)
+{
+    unsigned int *L1_mem = (unsigned int *) arg;
+    int i;
+
+    /* Reset SEED for each run */
+    /*if(rt_core_id()==3){*/
+        /*L1_mem[rt_core_id()] = SEED;*/
+    /*}*/
+
+    for (i = 0; i < PROBLEM_SIZE; i++) {
+        rand_r(&L1_mem[rt_core_id()]);
+    }
+}
+
+/* Forks the job to the cores */
+void cluster_entry(void *arg)
+{
+  rt_team_fork(CORE_NUMBER, random_gen, (void *) arg);
+}
+
+/* Called when cluster execution is ended */
+void end_of_call(void *arg)
+{
+  done = 1;
 }
