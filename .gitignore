@@ -1,6 +1,10 @@
 BUILD
 .vagrant*
 *.swp
+*.swo
+*.csv
+*.pdf
+*.svg
 tags
 examples
 !examples/.keep
