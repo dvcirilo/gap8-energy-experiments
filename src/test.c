@@ -98,42 +98,47 @@ int main()
 
     /* Cluster Start - Power on */
     CLUSTER_Start(0, CORE_NUMBER, 0);
+    delay();
 
-    int fmax, fstep, freq, finit, time;
+    int fmax, fstep, freq, finit;
     int vmin, vmax, vstep, voltage;
+    int fstep2, f_mid;
 
-    finit = 210000000;
-    fstep =  5000000;
+    finit = 87000000; //210000000
+    fstep =  20000000;
+    fstep2 = 10000000;
+    f_mid = 200000000;
 
     voltage = 1000;
     vmax = 1200;
     vstep = 50;
 
-    printf("set_freq,meas_freq,voltage,success[i],failures[i]\n");
+    printf("voltage,set_freq,meas_freq,success[i],failures[i]\n");
     while (voltage <= vmax) {       
         freq = finit;
         switch(voltage)
         {
             case 1000:
-                fmax = 220000000;
+                fmax = 215000000;
                 break;
             case 1050:
                 fmax = 245000000;
                 break;
             case 1100:
-                fmax = 280000000;
+                fmax = 270000000;
                 break;
             case 1150:
-                fmax = 305000000;
+                fmax = 295000000;
                 break;
             case 1200:
-                fmax = 330000000;
+                fmax = 320000000;
                 break;
             default:
                 fmax = 87000000;
         }
-        while (freq <= fmax) {
 
+        while (freq <= fmax) {
+            
             if(set_voltage_current(freq, voltage, false)){
                 printf("Failed to assign freq/voltage\n");
                 break;
@@ -141,12 +146,14 @@ int main()
 
             /* Set trigger */
             set_pin(trigger,1);
+            //printf("Trigger set\n");
 
             /* Run call the test */
             runs = test_rand(false);
 
             /* Unset trigger */
             set_pin(trigger,0);
+            //printf("Trigger unset\n");
  
             printf("%d,%d,%d",
                 current_voltage(),freq,FLL_GetFrequency(uFLL_CLUSTER));
@@ -156,13 +163,13 @@ int main()
 
             printf("\n");
 
-            freq += fstep;
-
-            /* Delay to allow measurement */
-            time = 100;
-            while (time) {
-                osDelay(time--);
+            if (freq <= f_mid){
+                freq += fstep;
+            }else{
+                freq += fstep2;
             }
+            delay();
+
         }
         voltage += vstep;
     }

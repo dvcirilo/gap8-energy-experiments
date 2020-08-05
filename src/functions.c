@@ -36,3 +36,12 @@ int set_voltage_current(int frequency, int voltage, bool verbose)
     }
     return 0;
 }
+
+void delay()
+{
+    /* Delay to allow measurement */
+    long time = 100000000;
+    while (time)
+        time--;
+
+}
