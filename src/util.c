@@ -52,7 +52,7 @@ int set_voltage_current(int frequency, int voltage)
 }
 
 void generate_rands(unsigned int *rand_values, unsigned int seed,
-                    int num_tests, int runs, int verbose)
+                    int num_tests, int runs)
 {
     unsigned int rands = seed;
     int i, j;
@@ -64,10 +64,5 @@ void generate_rands(unsigned int *rand_values, unsigned int seed,
 
         rand_values[i] = rands;
         /*rands = (unsigned int) SEED;*/
-
-        /*Print rand_values*/
-        if (verbose == 1)
-            printf("%u ", rand_values[i]);
     }
-
 }

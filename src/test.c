@@ -6,13 +6,38 @@
 
 unsigned int rand_values[TEST_RUNS];
 int done = 0;
+int watchdog = 0;
+
+static void watchdog_handle(void *arg)
+{
+    /*printf("[%d] Entered user handler. Time's up!\n", rt_time_get_us());*/
+    printf("Watchdog!!\n");
+    watchdog = 1;
+    rt_timer_start(arg, 100000);
+}
 
 int main()
 {
     struct run_info runs;
+    rt_timer_t timer;
     int i, j;
 
-    printf("\n---------------------- EXECUTION -----------------------\n");
+    rt_event_sched_t *p_sched = rt_event_internal_sched();
+    if (rt_event_alloc(p_sched, 4)) return -1;
+
+   rt_event_t *watchdog_event = rt_event_get(p_sched, watchdog_handle, 
+                                            (void *) &timer);
+
+   if(watchdog_event == NULL){
+       printf("Watchdog event error\n");
+       return -1;
+   }
+
+  /* Create a one-shot timer */
+    if (rt_timer_create(&timer, RT_TIMER_ONE_SHOT, watchdog_event))
+        return -1;
+
+    printf("\n/*********** EXECUTION **********/\n");
 
     /*Set FC (SoC) Frequency (100MhZ)*/
     rt_freq_set(__RT_FREQ_DOMAIN_FC,100*MHZ);
@@ -21,7 +46,7 @@ int main()
     /* Generate comparison values */
     printf("Generating %dM rand values with seed = %d\n",
                                 PROBLEM_SIZE*TEST_RUNS/(1000*1000), SEED);
-    generate_rands(rand_values, SEED, TEST_RUNS, PROBLEM_SIZE, 0);
+    generate_rands(rand_values, SEED, TEST_RUNS, PROBLEM_SIZE);
 
     printf("Done. Running proceeding with test...\n");
 
@@ -39,10 +64,7 @@ int main()
     /* Configure TRIGGER pin as an output */
     rt_gpio_set_dir(0, 1<<TRIGGER, RT_GPIO_IS_OUT);
 
-    rt_event_sched_t *p_sched = rt_event_internal_sched();
-    if (rt_event_alloc(p_sched, 4)) return -1;
-
-    rt_event_t *p_event = rt_event_get(p_sched, end_of_call, (void *) CID);
+    rt_event_t *p_event = rt_event_get(p_sched, end_of_call, NULL);
 
     rt_cluster_mount(MOUNT, CID, 0, NULL);
 
@@ -100,6 +122,9 @@ int main()
 
                 /* Set trigger */
                 rt_gpio_set_pin_value(0, TRIGGER, 1);
+       
+                /* Start watchdog */
+                rt_timer_start(&timer, 1000000);
 
                 /* Run call the test */
                 runs = test_rand(p_sched, stacks, p_event, 0);
@@ -158,12 +183,12 @@ struct run_info test_rand(rt_event_sched_t *p_sched, void *stacks,
     for(int j=0;j<TEST_RUNS;j++) {
 
         done = 0;
+        watchdog = 0;
         rt_cluster_call(NULL, CID, cluster_entry, L1_mem, stacks, STACK_SIZE,
                         STACK_SIZE, rt_nb_pe(), p_event);
 
         /* Wait for cluster */
-        while(!done)
-          rt_event_execute(p_sched, 1);
+        rt_event_yield(p_sched);
 
         calls++;
 
@@ -203,11 +228,12 @@ void random_gen(void *arg)
 /* Forks the job to the cores */
 void cluster_entry(void *arg)
 {
-  rt_team_fork(CORE_NUMBER, random_gen, (void *) arg);
+    rt_team_fork(CORE_NUMBER, random_gen, (void *) arg);
 }
 
 /* Called when cluster execution is ended */
 void end_of_call(void *arg)
 {
-  done = 1;
+    /*printf("End of call\n");*/
+    done = 1;
 }

@@ -10,7 +10,7 @@
 #define UNMOUNT      (0)
 #define CID          (0)
 #define FC_FREQ      (150000000)
-#define CORE_NUMBER  (8)
+#define CORE_NUMBER  (1)
 #define SEED         (10)
 #define V_MAX        (1200)
 #define V_MIN        (1000)
@@ -19,9 +19,9 @@
 #define F_MIN        (250000000)
 #define F_STEP       (5000000)
 #define F_DIV        (1000)
-#define PROBLEM_SIZE (100000)
-#define TEST_RUNS    (1000)
-#define TEST_REPEAT  (10)
+#define PROBLEM_SIZE (1000000)
+#define TEST_RUNS    (1)
+#define TEST_REPEAT  (2)
 #define MHZ          (1000000)
 
 struct run_info {
