@@ -40,8 +40,14 @@ int set_voltage_current(int frequency, int voltage, bool verbose)
 void delay()
 {
     /* Delay to allow measurement */
-    long time = 100000000;
-    while (time)
-        time--;
+    long time = 100;
+    /*while (time)*/
+        /*time--;*/
+    printf("before\n");
+    while (time) {
+        /*printf("Waiting for %dms...\n", time);*/
+        osDelay(time--);
+    }
+    printf("after\n");
 
 }

@@ -98,7 +98,6 @@ int main()
 
     /* Cluster Start - Power on */
     CLUSTER_Start(0, CORE_NUMBER, 0);
-    delay();
 
     int fmax, fstep, freq, finit;
     int vmin, vmax, vstep, voltage;
