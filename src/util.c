@@ -1,8 +1,6 @@
 #include <stdlib.h>
-#include "rt/rt_api.h"
+#include "pmsis.h"
 #include "util.h"
-#include "pmu_driver.h"
-#include "pmu_driver.c"
 
 /* stdlib.h rand_r implementation */
 int rand_r (unsigned int *seed)
@@ -30,21 +28,20 @@ int rand_r (unsigned int *seed)
 }
 
 /* Returns the current voltage */
-uint32_t current_voltage(void)
+int current_voltage(void)
 {
-    return DCDCSettingtomV(PMUState.DCDC_Settings[
-                        REGULATOR_STATE(PMUState.State)]);
+    return pi_pmu_state_get(PI_PMU_DOMAIN_FC);
 }
 
 int set_voltage_current(int frequency, int voltage)
 {
-
-    if (PMU_set_voltage(voltage,0) != 0) {
+    
+    if (pi_pmu_voltage_set(PI_PMU_DOMAIN_FC, voltage)) {
         return -1;
     }
 
     /* Set frequency */
-    if (rt_freq_set(__RT_FREQ_DOMAIN_CL,frequency) != 0) {
+    if (pi_fll_set_frequency(FLL_CLUSTER, frequency, 1) == -1) {
         return -1;
     }
 

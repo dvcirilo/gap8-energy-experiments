@@ -1,7 +1,7 @@
 #ifndef TEST_H
 #define TEST_H
 
-#include "rt/rt_api.h"
+#include "pmsis.h"
 
 #define WAIT_TIME    (12000000)
 #define TRIGGER      (17)
@@ -20,8 +20,8 @@
 #define F_STEP       (5000000)
 #define F_DIV        (1000)
 #define PROBLEM_SIZE (1000000)
-#define TEST_RUNS    (1)
-#define TEST_REPEAT  (2)
+#define TEST_RUNS    (100)
+#define TEST_REPEAT  (10)
 #define MHZ          (1000000)
 
 struct run_info {
@@ -33,10 +33,10 @@ struct run_info {
     int total_time;
 };
 
-struct run_info test_rand(rt_event_sched_t *p_sched, void *stacks,
-                          rt_event_t *p_event, int verbose);
+void rand_test(void);
+struct run_info test_rand(struct pi_device *cluster_dev, int verbose);
 void random_gen(void *arg);
 void cluster_entry(void *arg);
-void end_of_call(void *arg);
+//void end_of_call(void *arg);
 
 #endif /* TEST_H */
