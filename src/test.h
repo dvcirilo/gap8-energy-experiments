@@ -37,6 +37,5 @@ void rand_test(void);
 struct run_info test_rand(struct pi_device *cluster_dev, int verbose);
 void random_gen(void *arg);
 void cluster_entry(void *arg);
-//void end_of_call(void *arg);
 
 #endif /* TEST_H */

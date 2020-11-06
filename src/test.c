@@ -5,7 +5,7 @@
 #include "util.h"
 
 unsigned int rand_values[TEST_RUNS];
-unsigned int rand_ret = SEED;
+unsigned int rand_ret;
 
 int main(void)
 {
@@ -84,7 +84,7 @@ void rand_test(void)
         switch(voltage)
         {
             case 1000:
-                fmax = 220000000;
+                fmax = 210000000;
                 break;
             case 1050:
                 fmax = 245000000;
@@ -111,18 +111,18 @@ void rand_test(void)
 
             for (int k = 0; k < TEST_REPEAT; k++) {
                 /* Delay to allow measurements */
-                /*rt_time_wait_cycles(200*MHZ);*/
+                pi_time_wait_us(1000000);
 
                 /* Set trigger */
-                /*rt_gpio_set_pin_value(0, TRIGGER, 1);*/
+                pi_gpio_pin_write(&gpio, trigger, 1);
        
                 /* Run call the test */
                 runs = test_rand(&cluster_dev, 0);
 
                 /* Unset trigger */
-                /*rt_gpio_set_pin_value(0, TRIGGER, 0);*/
+                pi_gpio_pin_write(&gpio, trigger, 0);
      
-                printf("%d,%d", voltage, pi_fll_get_frequency(FLL_CLUSTER,1));
+                printf("%d,%d,%d", voltage, freq, pi_fll_get_frequency(FLL_CLUSTER,1));
                 for(int i=0; i<CORE_NUMBER;i++){
                     printf(",%d,%d", runs.success_counter[i],
                                      runs.failure_counter[i]);
@@ -155,6 +155,7 @@ struct run_info test_rand(struct pi_device *cluster_dev, int verbose)
     struct pi_cluster_task cluster_task;
     struct run_info runs;
     
+    rand_ret = SEED;
     for(int i=0; i<CORE_NUMBER;i++){
         runs.success_counter[i] = 0;
         runs.failure_counter[i] = 0;
@@ -164,6 +165,7 @@ struct run_info test_rand(struct pi_device *cluster_dev, int verbose)
 
     /* Runs NUM_TESTS tests. Each test with PROBLEM_SIZE calls to random_gen() */
     for(int j=0;j<TEST_RUNS;j++) {
+
 
      /* Then offload an entry point, this will get executed on the cluster controller */
         pi_cluster_send_task_to_cl(cluster_dev,
@@ -202,6 +204,7 @@ void random_gen(void *arg)
     for (i = 0; i < PROBLEM_SIZE; i++) {
         rand_r(&rand_num);
     }
+    /*printf("rand_ret = %u\n", rand_num);*/
     rand_ret = rand_num;
 }
 
