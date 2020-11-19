@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "pmsis.h"
+#include "pmsis/implem/drivers/pmsis_it.h"
 #include "test.h"
 #include "util.h"
 
@@ -68,9 +69,9 @@ void rand_test(void)
     int vmin, vmax, vstep, voltage;
     int fstep2, f_mid;
 
-    finit = 87000000; //210000000
+    finit = 210000000; //210000000
     fstep =  20000000;
-    fstep2 = 10000000;
+    fstep2 = 2000000;
     f_mid = 200000000;
 
     voltage = 1000;
@@ -84,7 +85,7 @@ void rand_test(void)
         switch(voltage)
         {
             case 1000:
-                fmax = 210000000;
+                fmax = 219000000;
                 break;
             case 1050:
                 fmax = 245000000;
