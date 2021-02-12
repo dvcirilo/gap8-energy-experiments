@@ -6,7 +6,8 @@
 #include "util.h"
 
 unsigned int rand_values[TEST_RUNS];
-unsigned int rand_ret;
+volatile unsigned int rand_ret;
+struct pi_task test_end;
 
 int main(void)
 {
@@ -49,7 +50,7 @@ void rand_test(void)
 
     /* Generate comparison values */
     printf("Generating %dM rand values with seed = %d\n",
-                                PROBLEM_SIZE*TEST_RUNS/(1000*1000), SEED);
+                               PROBLEM_SIZE*TEST_RUNS/(1000*1000), SEED);
     generate_rands(rand_values, SEED, TEST_RUNS, PROBLEM_SIZE);
 
     printf("Done. Running proceeding with test...\n");
@@ -69,14 +70,15 @@ void rand_test(void)
     int vmin, vmax, vstep, voltage;
     int fstep2, f_mid;
 
-    finit = 210000000; //210000000
-    fstep =  20000000;
-    fstep2 = 2000000;
-    f_mid = 200000000;
+    finit = F_MIN*MHZ;
+    fstep =  20*MHZ;
+    fstep2 = 2*MHZ;
+    f_mid = 200*MHZ;
 
     voltage = 1000;
-    vmax = 1200;
+    vmax = 1000;
     vstep = 50;
+    printf("finit: %d\n", finit);
 
     printf("voltage,set_freq,meas_freq,success[i],failures[i]\n");
 
@@ -85,7 +87,7 @@ void rand_test(void)
         switch(voltage)
         {
             case 1000:
-                fmax = 219000000;
+                fmax = 218000000;
                 break;
             case 1050:
                 fmax = 245000000;
@@ -171,6 +173,8 @@ struct run_info test_rand(struct pi_device *cluster_dev, int verbose)
      /* Then offload an entry point, this will get executed on the cluster controller */
         pi_cluster_send_task_to_cl(cluster_dev,
                     pi_cluster_task(&cluster_task, cluster_entry, NULL));
+        /*pi_cluster_send_task_async(cluster_dev,*/
+                    /*pi_cluster_task(&cluster_task, cluster_entry, NULL));*/
 
         calls++;
 

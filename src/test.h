@@ -15,13 +15,22 @@
 #define V_MAX        (1200)
 #define V_MIN        (1000)
 #define V_STEP       (50)
+
+#ifndef F_MAX
 #define F_MAX        (350000000)
-#define F_MIN        (250000000)
+#endif /* F_MAX */
+
+#ifndef F_MIN
+#define F_MIN        (210000000)
+#endif /* F_MIN */
+
 #define F_STEP       (5000000)
 #define F_DIV        (1000)
+#ifndef PROBLEM_SIZE
 #define PROBLEM_SIZE (1000000)
+#endif /* PROBLEM_SIZE */
 #define TEST_RUNS    (100)
-#define TEST_REPEAT  (10)
+#define TEST_REPEAT  (1)
 #define MHZ          (1000000)
 
 struct run_info {
