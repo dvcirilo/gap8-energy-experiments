@@ -5,6 +5,8 @@ BUILD
 *.csv
 *.pdf
 *.svg
+*.vim
 tags
+out
 examples
 !examples/.keep
