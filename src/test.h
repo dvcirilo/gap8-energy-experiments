@@ -9,28 +9,39 @@
 #define MOUNT        (1)
 #define UNMOUNT      (0)
 #define CID          (0)
-#define FC_FREQ      (150000000)
+#define FC_FREQ      (150)
 #define CORE_NUMBER  (1)
 #define SEED         (10)
-#define V_MAX        (1200)
 #define V_MIN        (1000)
 #define V_STEP       (50)
 
+#ifndef V_MAX
+#define V_MAX        (1200)
+#endif /* V_MAX */
+
 #ifndef F_MAX
-#define F_MAX        (350000000)
+#define F_MAX        (350)
 #endif /* F_MAX */
 
 #ifndef F_MIN
-#define F_MIN        (210000000)
+#define F_MIN        (210)
 #endif /* F_MIN */
 
 #define F_STEP       (5000000)
 #define F_DIV        (1000)
+
 #ifndef PROBLEM_SIZE
 #define PROBLEM_SIZE (1000000)
 #endif /* PROBLEM_SIZE */
+
+#ifndef TEST_RUNS
 #define TEST_RUNS    (100)
+#endif /* TEST_RUNS */
+
+#ifndef TEST_REPEAT
 #define TEST_REPEAT  (1)
+#endif /* TEST_REPEAT */
+
 #define MHZ          (1000000)
 
 struct run_info {

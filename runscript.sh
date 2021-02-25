@@ -1,16 +1,24 @@
 #!/usr/bin/env bash
 
-DONE=0
+DONE=2
 CURRDIR=`pwd`
 OUTDIR=$CURRDIR/out
 mkdir -p $OUTDIR
 
-TIMEOUT=30
+TIMEOUT=60
+F_MIN=200
+PROBLEM_SIZE=100000
+TEST_RUNS=1000
+TEST_REPEAT=100
+V_MAX=1200
 
-while [[ $DONE == 0 ]]
+
+while [[ $DONE > 0 ]]
 do
     TIMESTAMP=$(date "+%Y.%m.%d-%H.%M.%S")
     OUTFILE=output-$TIMESTAMP
+    APP_CFLAGS="-O2 -DF_MIN=${F_MIN} -DTEST_REPEAT=${TEST_REPEAT}\
+                -DPROBLEM_SIZE=${PROBLEM_SIZE} -DV_MAX=${V_MAX}"
     make clean all run &>> $OUTDIR/$OUTFILE &
     #make clean all run platform=gvsoc &
     TEST_PID=$!
@@ -45,5 +53,5 @@ do
 
     # Kill measurement script when test is finished.
     kill $MEAS_PID
-    DONE=1
+    let "DONE--"
 done

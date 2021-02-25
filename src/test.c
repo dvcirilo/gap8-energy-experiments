@@ -39,8 +39,8 @@ void rand_test(void)
     }
     printf("%dmV\n", current_voltage());
 
-    /*Set FC (SoC) Frequency (100MhZ)*/
-    int32_t cur_fc_freq = pi_fll_set_frequency(FLL_SOC, 100*MHZ, 1);
+    /* Set FC (SoC) Frequency */
+    int32_t cur_fc_freq = pi_fll_set_frequency(FLL_SOC, FC_FREQ*MHZ, 1);
     if (cur_fc_freq == -1)
     {
         printf("Error changing frequency !\nTest failed...\n");
@@ -50,7 +50,7 @@ void rand_test(void)
 
     /* Generate comparison values */
     printf("Generating %dM rand values with seed = %d\n",
-                               PROBLEM_SIZE*TEST_RUNS/(1000*1000), SEED);
+                               PROBLEM_SIZE*TEST_RUNS/MHZ, SEED);
     generate_rands(rand_values, SEED, TEST_RUNS, PROBLEM_SIZE);
 
     printf("Done. Running proceeding with test...\n");
@@ -67,7 +67,7 @@ void rand_test(void)
     if (pi_cluster_open(&cluster_dev)) pmsis_exit(-1);
 
     int fmax, fstep, freq, finit;
-    int vmin, vmax, vstep, voltage;
+    int voltage;
     int fstep2, f_mid;
 
     finit = F_MIN*MHZ;
@@ -75,34 +75,32 @@ void rand_test(void)
     fstep2 = 2*MHZ;
     f_mid = 200*MHZ;
 
-    voltage = 1000;
-    vmax = 1000;
-    vstep = 50;
+    voltage = V_MIN;
     printf("finit: %d\n", finit);
 
     printf("voltage,set_freq,meas_freq,success[i],failures[i]\n");
 
-    while (voltage <= vmax) {       
+    while (voltage <= V_MAX) {       
         freq = finit;
         switch(voltage)
         {
             case 1000:
-                fmax = 218000000;
+                fmax = 218*MHZ;
                 break;
             case 1050:
-                fmax = 245000000;
+                fmax = 245*MHZ;
                 break;
             case 1100:
-                fmax = 270000000;
+                fmax = 270*MHZ;
                 break;
             case 1150:
-                fmax = 295000000;
+                fmax = 295*MHZ;
                 break;
             case 1200:
-                fmax = 320000000;
+                fmax = F_MAX*MHZ;
                 break;
             default:
-                fmax = 87000000;
+                fmax = 87*MHZ;
         }
 
         while (freq <= fmax) {
@@ -142,7 +140,7 @@ void rand_test(void)
             }
         }
 
-        voltage += vstep;
+        voltage += V_STEP;
     }
 
     pi_cluster_close(&cluster_dev);
