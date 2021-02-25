@@ -24,7 +24,7 @@
 #endif /* F_MAX */
 
 #ifndef F_MIN
-#define F_MIN        (210)
+#define F_MIN        (200)
 #endif /* F_MIN */
 
 #define F_STEP       (5000000)

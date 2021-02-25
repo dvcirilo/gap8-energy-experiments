@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
-DONE=2
+DONE=5
 CURRDIR=`pwd`
 OUTDIR=$CURRDIR/out
 mkdir -p $OUTDIR
 
-TIMEOUT=60
+TIMEOUT=120
 F_MIN=200
 PROBLEM_SIZE=100000
 TEST_RUNS=1000
-TEST_REPEAT=100
+TEST_REPEAT=10
 V_MAX=1200
 
 
@@ -17,8 +17,10 @@ while [[ $DONE > 0 ]]
 do
     TIMESTAMP=$(date "+%Y.%m.%d-%H.%M.%S")
     OUTFILE=output-$TIMESTAMP
-    APP_CFLAGS="-O2 -DF_MIN=${F_MIN} -DTEST_REPEAT=${TEST_REPEAT}\
-                -DPROBLEM_SIZE=${PROBLEM_SIZE} -DV_MAX=${V_MAX}"
+    export APP_CFLAGS="-O0 -DF_MIN=${F_MIN} -DTEST_REPEAT=${TEST_REPEAT}\
+                -DPROBLEM_SIZE=${PROBLEM_SIZE} -DV_MAX=${V_MAX}\
+                -DTEST_RUNS=${TEST_RUNS}"
+    echo $APP_CFLAGS
     make clean all run &>> $OUTDIR/$OUTFILE &
     #make clean all run platform=gvsoc &
     TEST_PID=$!
