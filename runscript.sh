@@ -7,19 +7,20 @@ mkdir -p $OUTDIR
 
 TIMEOUT=120
 F_MIN=200
+F_MAX=350
 PROBLEM_SIZE=100000
 TEST_RUNS=1000
 TEST_REPEAT=10
-V_MAX=1200
+VOLTAGE=1000
 
 
-while [[ $DONE > 0 ]]
+while (( $VOLTAGE <= "1200" ))
 do
     TIMESTAMP=$(date "+%Y.%m.%d-%H.%M.%S")
     OUTFILE=output-$TIMESTAMP
     export APP_CFLAGS="-O0 -DF_MIN=${F_MIN} -DTEST_REPEAT=${TEST_REPEAT}\
-                -DPROBLEM_SIZE=${PROBLEM_SIZE} -DV_MAX=${V_MAX}\
-                -DTEST_RUNS=${TEST_RUNS}"
+                -DPROBLEM_SIZE=${PROBLEM_SIZE} -DF_MAX=${F_MAX}\
+                -DTEST_RUNS=${TEST_RUNS} -DVOLTAGE=${VOLTAGE}"
     echo $APP_CFLAGS
     make clean all run &>> $OUTDIR/$OUTFILE &
     #make clean all run platform=gvsoc &
@@ -55,5 +56,5 @@ do
 
     # Kill measurement script when test is finished.
     kill $MEAS_PID
-    let "DONE--"
+    let "VOLTAGE+=50"
 done

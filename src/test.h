@@ -12,12 +12,10 @@
 #define FC_FREQ      (150)
 #define CORE_NUMBER  (1)
 #define SEED         (10)
-#define V_MIN        (1000)
-#define V_STEP       (50)
 
-#ifndef V_MAX
-#define V_MAX        (1200)
-#endif /* V_MAX */
+#ifndef VOLTAGE
+#define VOLTAGE      (1000)
+#endif /* VOLTAGE */
 
 #ifndef F_MAX
 #define F_MAX        (350)
@@ -31,7 +29,7 @@
 #define F_DIV        (1000)
 
 #ifndef PROBLEM_SIZE
-#define PROBLEM_SIZE (1000000)
+#define PROBLEM_SIZE (100000)
 #endif /* PROBLEM_SIZE */
 
 #ifndef TEST_RUNS
@@ -39,7 +37,7 @@
 #endif /* TEST_RUNS */
 
 #ifndef TEST_REPEAT
-#define TEST_REPEAT  (1)
+#define TEST_REPEAT  (5)
 #endif /* TEST_REPEAT */
 
 #define MHZ          (1000000)

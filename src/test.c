@@ -66,81 +66,50 @@ void rand_test(void)
 
     if (pi_cluster_open(&cluster_dev)) pmsis_exit(-1);
 
-    int fmax, fstep, freq, finit;
-    int voltage;
+    int fmax, fstep, freq;
     int fstep2, f_mid;
 
-    finit = F_MIN*MHZ;
+    freq = F_MIN*MHZ;
     fstep =  20*MHZ;
     fstep2 = 2*MHZ;
     f_mid = 200*MHZ;
-
-    voltage = V_MIN;
-    printf("finit: %d\n", finit);
+    if (VOLTAGE > 1050)
+        f_mid=250*MHZ;
 
     printf("voltage,set_freq,meas_freq,success[i],failures[i]\n");
 
-    while (voltage <= V_MAX) {       
-        freq = finit;
-        switch(voltage)
-        {
-            case 1000:
-                fmax = 218*MHZ;
-                break;
-            case 1050:
-                fmax = 245*MHZ;
-                break;
-            case 1100:
-                fmax = 270*MHZ;
-                break;
-            case 1150:
-                fmax = 295*MHZ;
-                break;
-            case 1200:
-                fmax = F_MAX*MHZ;
-                break;
-            default:
-                fmax = 87*MHZ;
+    while (freq <= F_MAX*MHZ) {
+        if(set_voltage_current(freq, VOLTAGE)){
+            printf("Failed to assign freq/voltage\n");
+            break;
         }
 
-        while (freq <= fmax) {
-            
-            if(set_voltage_current(freq, voltage)){
-                printf("Failed to assign freq/voltage\n");
-                break;
+        for (int k = 0; k < TEST_REPEAT; k++) {
+            /* Delay to allow measurements */
+            pi_time_wait_us(1000000);
+
+            /* Set trigger */
+            pi_gpio_pin_write(&gpio, trigger, 1);
+   
+            /* Run call the test */
+            runs = test_rand(&cluster_dev, 0);
+
+            /* Unset trigger */
+            pi_gpio_pin_write(&gpio, trigger, 0);
+ 
+            printf("%d,%d,%d", VOLTAGE, freq, pi_fll_get_frequency(FLL_CLUSTER,1));
+            for(int i=0; i<CORE_NUMBER;i++){
+                printf(",%d,%d", runs.success_counter[i],
+                                 runs.failure_counter[i]);
             }
-
-            for (int k = 0; k < TEST_REPEAT; k++) {
-                /* Delay to allow measurements */
-                pi_time_wait_us(1000000);
-
-                /* Set trigger */
-                pi_gpio_pin_write(&gpio, trigger, 1);
-       
-                /* Run call the test */
-                runs = test_rand(&cluster_dev, 0);
-
-                /* Unset trigger */
-                pi_gpio_pin_write(&gpio, trigger, 0);
-     
-                printf("%d,%d,%d", voltage, freq, pi_fll_get_frequency(FLL_CLUSTER,1));
-                for(int i=0; i<CORE_NUMBER;i++){
-                    printf(",%d,%d", runs.success_counter[i],
-                                     runs.failure_counter[i]);
-                }
-
-                printf("\n");
-                
-            }
-
-            if (freq <= f_mid){
-                freq += fstep;
-            }else{
-                freq += fstep2;
-            }
+            printf("\n");
         }
 
-        voltage += V_STEP;
+        if (freq < f_mid){
+            freq += fstep;
+        }else{
+            freq += fstep2;
+        }
     }
 
     pi_cluster_close(&cluster_dev);
