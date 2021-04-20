@@ -18,11 +18,11 @@
 #endif /* VOLTAGE */
 
 #ifndef F_MAX
-#define F_MAX        (350)
+#define F_MAX        (210)
 #endif /* F_MAX */
 
 #ifndef F_MIN
-#define F_MIN        (200)
+#define F_MIN        (180)
 #endif /* F_MIN */
 
 #define F_STEP       (5000000)
@@ -42,17 +42,16 @@
 
 #define MHZ          (1000000)
 
-struct run_info {
-    int success_counter[CORE_NUMBER];
-    int failure_counter[CORE_NUMBER];
-    int failures;
-    int successes;    
-    int call_total;
-    int total_time;
-};
+//struct run_info {
+    //int success_counter[CORE_NUMBER];
+    //int failure_counter[CORE_NUMBER];
+    //int failures;
+    //int successes;    
+    //int call_total;
+    //int total_time;
+//};
 
 void rand_test(void);
-struct run_info test_rand(struct pi_device *cluster_dev, int verbose);
 void random_gen(void *arg);
 void cluster_entry(void *arg);
 

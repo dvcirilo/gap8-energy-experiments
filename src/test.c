@@ -5,7 +5,6 @@
 #include "test.h"
 #include "util.h"
 
-unsigned int rand_values[TEST_RUNS];
 volatile unsigned int rand_ret;
 struct pi_task test_end;
 
@@ -18,8 +17,6 @@ int main(void)
 
 void rand_test(void)
 {
-    struct run_info runs;
-
     struct pi_device gpio;
     struct pi_gpio_conf gpio_conf = {0};
     pi_gpio_conf_init(&gpio_conf);
@@ -37,7 +34,7 @@ void rand_test(void)
         printf("Error changing voltage !\nTest failed...\n");
         pmsis_exit(-2);
     }
-    printf("%dmV\n", current_voltage());
+    printf("Voltage: %d V\n", current_voltage());
 
     /* Set FC (SoC) Frequency */
     int32_t cur_fc_freq = pi_fll_set_frequency(FLL_SOC, FC_FREQ*MHZ, 1);
@@ -47,11 +44,6 @@ void rand_test(void)
         pmsis_exit(-3);
     }
     printf("Soc FC frequency: %d MHz\n", pi_fll_get_frequency(FLL_SOC, 1)/MHZ);
-
-    /* Generate comparison values */
-    printf("Generating %dM rand values with seed = %d\n",
-                               PROBLEM_SIZE*TEST_RUNS/MHZ, SEED);
-    generate_rands(rand_values, SEED, TEST_RUNS, PROBLEM_SIZE);
 
     printf("Done. Running proceeding with test...\n");
 
@@ -66,6 +58,8 @@ void rand_test(void)
 
     if (pi_cluster_open(&cluster_dev)) pmsis_exit(-1);
 
+    struct pi_cluster_task cluster_task;
+
     int fmax, fstep, freq;
     int fstep2, f_mid;
 
@@ -76,7 +70,7 @@ void rand_test(void)
     if (VOLTAGE > 1050)
         f_mid=250*MHZ;
 
-    printf("voltage,set_freq,meas_freq,success[i],failures[i]\n");
+    printf("voltage,set_freq,meas_freq,rand_ret\n");
 
     while (freq <= F_MAX*MHZ) {
         if(set_voltage_current(freq, VOLTAGE)){
@@ -92,16 +86,14 @@ void rand_test(void)
             pi_gpio_pin_write(&gpio, trigger, 1);
    
             /* Run call the test */
-            runs = test_rand(&cluster_dev, 0);
+            pi_cluster_send_task_to_cl(&cluster_dev,
+                    pi_cluster_task(&cluster_task, cluster_entry, NULL));
 
             /* Unset trigger */
             pi_gpio_pin_write(&gpio, trigger, 0);
  
             printf("%d,%d,%d", VOLTAGE, freq, pi_fll_get_frequency(FLL_CLUSTER,1));
-            for(int i=0; i<CORE_NUMBER;i++){
-                printf(",%d,%d", runs.success_counter[i],
-                                 runs.failure_counter[i]);
-            }
+            printf(",%u", rand_ret);
             printf("\n");
         }
 
@@ -118,54 +110,12 @@ void rand_test(void)
     pmsis_exit(0);
 }
 
-/* The actual test. */
-struct run_info test_rand(struct pi_device *cluster_dev, int verbose)
-{
-    int total_time=0, calls=0, call_total=0;
-    struct pi_cluster_task cluster_task;
-    struct run_info runs;
-    
-    rand_ret = SEED;
-    for(int i=0; i<CORE_NUMBER;i++){
-        runs.success_counter[i] = 0;
-        runs.failure_counter[i] = 0;
-        runs.successes = 0;
-        runs.failures = 0;
-    }
-
-    /* Runs NUM_TESTS tests. Each test with PROBLEM_SIZE calls to random_gen() */
-    for(int j=0;j<TEST_RUNS;j++) {
-
-
-     /* Then offload an entry point, this will get executed on the cluster controller */
-        pi_cluster_send_task_to_cl(cluster_dev,
-                    pi_cluster_task(&cluster_task, cluster_entry, NULL));
-        /*pi_cluster_send_task_async(cluster_dev,*/
-                    /*pi_cluster_task(&cluster_task, cluster_entry, NULL));*/
-
-        calls++;
-
-        for (int i = 0; i < CORE_NUMBER; i++) {
-            if (rand_ret^rand_values[j]){
-                runs.failure_counter[i]++;
-                runs.failures++;
-            } else {
-                runs.success_counter[i]++;
-                runs.successes++;
-            }
-           if (verbose == 1)
-               printf("%d ", rand_ret);
-        }
-    }    
-
-    return runs;
-}
-
 /* The CLUSTER function: Generate a random number */
 void random_gen(void *arg)
 {
     /*unsigned int *L1_mem = (unsigned int *) arg;*/
-    unsigned int rand_num = rand_ret;
+    /*unsigned int rand_num = rand_ret;*/
+    unsigned int rand_num = SEED;
     int i;
 
     /* Reset SEED for each run */
