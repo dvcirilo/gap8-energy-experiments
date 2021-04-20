@@ -7,11 +7,12 @@ mkdir -p $OUTDIR
 TIMEOUT=10
 F_MIN=200
 F_MAX=350
-PROBLEM_SIZE=100000 # Random number generator iterations
+TEST_RUNS=100
+PROBLEM_SIZE=1000 # Random number generator iterations
 TEST_REPEAT=3       # RNG calls at same voltage/frequency
 VOLTAGE=1000        # Applied voltage
 MAX_V=1000          # Maximum applied voltage
-REPEATS=3           # Repeats the same voltage after timeout.
+REPEATS=1           # Repeats the same voltage after timeout.
 
 while (( $VOLTAGE <= $MAX_V ))
 do

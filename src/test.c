@@ -70,7 +70,7 @@ void rand_test(void)
     if (VOLTAGE > 1050)
         f_mid=250*MHZ;
 
-    printf("voltage,set_freq,meas_freq,rand_ret\n");
+    printf("voltage,set_freq,meas_freq,TEST_RUNS,PROBLEM_SIZE,SEED,rand_ret\n");
 
     while (freq <= F_MAX*MHZ) {
         if(set_voltage_current(freq, VOLTAGE)){
@@ -93,7 +93,7 @@ void rand_test(void)
             pi_gpio_pin_write(&gpio, trigger, 0);
  
             printf("%d,%d,%d", VOLTAGE, freq, pi_fll_get_frequency(FLL_CLUSTER,1));
-            printf(",%u", rand_ret);
+            printf(",%d,%d,%d,%u", TEST_RUNS, PROBLEM_SIZE, SEED, rand_ret);
             printf("\n");
         }
 
@@ -116,15 +116,17 @@ void random_gen(void *arg)
     /*unsigned int *L1_mem = (unsigned int *) arg;*/
     /*unsigned int rand_num = rand_ret;*/
     unsigned int rand_num = SEED;
-    int i;
+    int i,j;
 
     /* Reset SEED for each run */
     /*if(pi_core_id()==3){*/
         /*L1_mem[pi_core_id()] = SEED;*/
     /*}*/
 
-    for (i = 0; i < PROBLEM_SIZE; i++) {
-        rand_r(&rand_num);
+    for (i = 0; i < TEST_RUNS; i++) {
+        for (j = 0; j < PROBLEM_SIZE; j++) {
+            rand_r(&rand_num);
+        }
     }
     /*printf("rand_ret = %u\n", rand_num);*/
     rand_ret = rand_num;
