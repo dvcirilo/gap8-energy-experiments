@@ -6,7 +6,13 @@
 #include "util.h"
 
 volatile unsigned int rand_ret;
-struct pi_task test_end;
+int cluster_flag = 0;
+
+void end_cluster(void *arg)
+{
+    cluster_flag = 1;
+    pi_yield();
+}
 
 int main(void)
 {
@@ -25,7 +31,7 @@ void rand_test(void)
     pi_gpio_e trigger = PI_GPIO_A17_PAD_31_B11;
     pi_gpio_pin_configure(&gpio, trigger, PI_GPIO_OUTPUT);
 
-    int i, j;
+    int i, j, counter, timeout_flag;
 
     printf("\n/*********** EXECUTION **********/\n");
 
@@ -49,7 +55,6 @@ void rand_test(void)
 
     struct pi_device cluster_dev;
     struct pi_cluster_conf conf;
-    struct pi_task task;
 
     // First open the cluster
     pi_cluster_conf_init(&conf);
@@ -59,6 +64,9 @@ void rand_test(void)
     if (pi_cluster_open(&cluster_dev)) pmsis_exit(-1);
 
     struct pi_cluster_task cluster_task;
+    struct pi_task wait_task = {};
+    pi_task_callback(&wait_task, end_cluster, NULL);
+    /*pi_task_block(&wait_task);*/
 
     int fmax, fstep, freq;
     int fstep2, f_mid;
@@ -70,7 +78,7 @@ void rand_test(void)
     if (VOLTAGE > 1050)
         f_mid=250*MHZ;
 
-    printf("voltage,set_freq,meas_freq,TEST_RUNS,PROBLEM_SIZE,SEED,rand_ret\n");
+    printf("voltage,set_freq,meas_freq,TEST_RUNS,PROBLEM_SIZE,SEED,rand_ret,timeout\n");
 
     while (freq <= F_MAX*MHZ) {
         if(set_voltage_current(freq, VOLTAGE)){
@@ -81,19 +89,36 @@ void rand_test(void)
         for (int k = 0; k < TEST_REPEAT; k++) {
             /* Delay to allow measurements */
             pi_time_wait_us(1000000);
+            cluster_flag = 0;
 
             /* Set trigger */
             pi_gpio_pin_write(&gpio, trigger, 1);
-   
+
             /* Run call the test */
-            pi_cluster_send_task_to_cl(&cluster_dev,
-                    pi_cluster_task(&cluster_task, cluster_entry, NULL));
+            pi_cluster_send_task_to_cl_async(
+                    &cluster_dev,
+                    pi_cluster_task(&cluster_task, cluster_entry, NULL),
+                    &wait_task
+            );
+
+            counter = 0; 
+            timeout_flag = 0;
+            while(cluster_flag == 0){
+                pi_time_wait_us(500*1000);
+                counter++; 
+                if (counter > 10){
+                    counter = 0;
+                    timeout_flag = 1;
+                }
+            }
+
 
             /* Unset trigger */
             pi_gpio_pin_write(&gpio, trigger, 0);
  
             printf("%d,%d,%d", VOLTAGE, freq, pi_fll_get_frequency(FLL_CLUSTER,1));
             printf(",%d,%d,%d,%u", TEST_RUNS, PROBLEM_SIZE, SEED, rand_ret);
+            printf(",%d", timeout_flag);
             printf("\n");
         }
 
@@ -128,7 +153,6 @@ void random_gen(void *arg)
             rand_r(&rand_num);
         }
     }
-    /*printf("rand_ret = %u\n", rand_num);*/
     rand_ret = rand_num;
 }
 
@@ -138,5 +162,6 @@ void cluster_entry(void *arg)
     /*printf("(%ld, %ld) Entering cluster controller\n", pi_cluster_id(), pi_core_id());*/
 
     // Just fork the execution on all cores
-    pi_cl_team_fork(0, random_gen, (void *) arg);
+    /*pi_cl_team_fork(0, random_gen, (void *) arg);*/
+    random_gen(arg);
 }

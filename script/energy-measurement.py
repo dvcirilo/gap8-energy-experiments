@@ -13,7 +13,7 @@ em = pyenergy.EnergyMonitor(BOARD_ID)
 # Calibration for STM32F407G-DISC1 - MB997D -  
 em.measurement_params[1]['resistor'] = 0.55
 em.measurement_params[1]['gain'] = 50
-em.measurement_params[1]['vref'] = 2.946
+em.measurement_params[1]['vref'] = 2.948
 
 em.enableMeasurementPoint(M_POINT)
 first = True

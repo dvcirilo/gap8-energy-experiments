@@ -14,7 +14,7 @@
 #define SEED         (10)
 
 #ifndef VOLTAGE
-#define VOLTAGE      (1000)
+#define VOLTAGE      (1200)
 #endif /* VOLTAGE */
 
 #ifndef F_MAX
@@ -22,7 +22,7 @@
 #endif /* F_MAX */
 
 #ifndef F_MIN
-#define F_MIN        (180)
+#define F_MIN        (200)
 #endif /* F_MIN */
 
 #define F_STEP       (5000000)
