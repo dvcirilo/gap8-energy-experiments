@@ -4,15 +4,16 @@ CURRDIR=`pwd`
 OUTDIR=$CURRDIR/out
 mkdir -p $OUTDIR
 
-TIMEOUT=10
-F_MIN=200
-F_MAX=350
-TEST_RUNS=100
-PROBLEM_SIZE=1000 # Random number generator iterations
-TEST_REPEAT=3       # RNG calls at same voltage/frequency
-VOLTAGE=1000        # Applied voltage
-MAX_V=1000          # Maximum applied voltage
-REPEATS=1           # Repeats the same voltage after timeout.
+F_MIN=300
+F_MAX=400
+TEST_RUNS=10
+PROBLEM_SIZE=10000  # Random number generator iterations
+TEST_REPEAT=1       # RNG calls at same voltage/frequency
+VOLTAGE=1150        # Initial applied voltage
+MAX_V=1200          # Maximum applied voltage
+REPEATS=2           # Repeats the same voltage after timeout.
+REPEAT_COUNTER=$REPEATS
+TIMEOUT=2
 
 while (( $VOLTAGE <= $MAX_V ))
 do
@@ -30,7 +31,7 @@ do
     END=0
 
     # While end is not reached and test is still running...
-    while [[ "$END" == "0" ]]  && kill -s 0 $TEST_PID > /dev/null 2>&1 
+    while [[ "$END" == "0" ]]  && kill -s 0 $TEST_PID > /dev/null 2>&1
     do
         STARTMOD=$(stat -c '%Y' $OUTDIR/$OUTFILE)
         sleep $TIMEOUT
@@ -56,8 +57,10 @@ do
 
     # Kill measurement script when test is finished.
     kill $MEAS_PID
-    let "REPEATS--"
-    if [[ $REPEATS == 0 ]]; then
+    let "REPEAT_COUNTER--"
+    echo $REPEAT_COUNTER
+    if [[ $REPEAT_COUNTER == 0 ]]; then
         let "VOLTAGE+=50"
+        REPEAT_COUNTER=$REPEATS
     fi
 done

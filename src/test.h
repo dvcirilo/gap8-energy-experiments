@@ -14,15 +14,15 @@
 #define SEED         (10)
 
 #ifndef VOLTAGE
-#define VOLTAGE      (1200)
+#define VOLTAGE      (1000)
 #endif /* VOLTAGE */
 
 #ifndef F_MAX
-#define F_MAX        (210)
+#define F_MAX        (250)
 #endif /* F_MAX */
 
 #ifndef F_MIN
-#define F_MIN        (200)
+#define F_MIN        (210)
 #endif /* F_MIN */
 
 #define F_STEP       (5000000)
@@ -37,22 +37,22 @@
 #endif /* TEST_RUNS */
 
 #ifndef TEST_REPEAT
-#define TEST_REPEAT  (5)
+#define TEST_REPEAT  (1)
 #endif /* TEST_REPEAT */
 
 #define MHZ          (1000000)
 
-//struct run_info {
-    //int success_counter[CORE_NUMBER];
-    //int failure_counter[CORE_NUMBER];
-    //int failures;
-    //int successes;    
-    //int call_total;
-    //int total_time;
-//};
+struct run_info {
+    int failures;
+    int successes;    
+    int lockups;
+    int call_total;
+    int total_time;
+};
 
 void rand_test(void);
 void random_gen(void *arg);
 void cluster_entry(void *arg);
+struct run_info test_rand(struct pi_device *cluster_dev, struct pi_cluster_conf *conf);
 
 #endif /* TEST_H */

@@ -60,6 +60,5 @@ void generate_rands(unsigned int *rand_values, unsigned int seed,
         }
 
         rand_values[i] = rands;
-        /*rands = (unsigned int) SEED;*/
     }
 }
